@@ -1,8 +1,0 @@
-<!doctype html><meta charset=utf-8><title>bridge</title>
-<script>
-/* lets TikTok Studio, inside this studio's own upload tab, read the week's videos from this site */
-addEventListener('message',async e=>{if(!/^https:\/\/(www\.)?tiktok\.com$/.test(e.origin)||!e.data||!e.data.want)return;
-  for(const [f,n] of e.data.want){const buf=await (await fetch('/promo/'+f)).arrayBuffer();e.source.postMessage({kind:'w46',name:n,buf},e.origin,[buf])}
-  e.source.postMessage({kind:'w46done'},e.origin)});
-parent.postMessage({kind:'w46ready'},'*');
-</script>
