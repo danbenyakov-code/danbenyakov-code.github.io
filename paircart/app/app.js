@@ -40,7 +40,7 @@ function parse(raw) { // same rules as Android QuickAddParser
 const S = { hid: null, lists: [], items: [], cats: {}, sel: localStorage.sel || null, unsub: [], itemUnsub: null };
 
 onAuthStateChanged(auth, async user => {
-  S.unsub.forEach(u => u()); S.unsub = []; S.itemUnsub?.(); S.itemUnsub = null;
+  S.unsub.forEach(u => u()); S.unsub = []; S.itemUnsub?.(); S.itemUnsub = null; S.subscribed = null;
   if (!user) return renderSignIn();
   $app.innerHTML = '<div class="center">…</div>';
   S.hid = await ensureHousehold(user.uid);
@@ -48,7 +48,8 @@ onAuthStateChanged(auth, async user => {
   S.unsub.push(onSnapshot(collection(base, 'lists'), s => {
     S.lists = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => !l.archived).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     if (!S.lists.length) return createList(T.defList);
-    if (!S.lists.some(l => l.id === S.sel)) selectList(S.lists[0].id); else render();
+    const want = S.lists.some(l => l.id === S.sel) ? S.sel : S.lists[0].id;
+    if (S.subscribed !== want) selectList(want); else render();
   }));
   S.unsub.push(onSnapshot(collection(base, 'categories'), s => { S.cats = Object.fromEntries(s.docs.map(d => [d.id, d.data()])); render(); }));
 });
@@ -63,7 +64,7 @@ async function ensureHousehold(uid) { // mirrors CloudSync.ensureHousehold
   await b.commit(); return h.id;
 }
 function selectList(id) {
-  S.sel = id; localStorage.sel = id; S.itemUnsub?.();
+  S.sel = id; S.subscribed = id; localStorage.sel = id; S.itemUnsub?.(); S.items = [];
   S.itemUnsub = onSnapshot(query(collection(db, 'households', S.hid, 'items'), where('listId', '==', id)), s => {
     S.items = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(i => !i.deleted); render();
   });
