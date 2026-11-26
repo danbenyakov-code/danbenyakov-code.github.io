@@ -10,32 +10,49 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="PairCart">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#1f8a5b">
+<meta name="theme-color" content="#0F766E">
 <style>
-:root{--g:#1f8a5b;--bg:#f6f8f7;--card:#fff;--t:#17211c;--m:#6b7a72;--line:#e3e9e5}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1512;--card:#18211c;--t:#e8efe9;--m:#93a39a;--line:#26322b}}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--t);font:17px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--g);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;gap:8px;align-items:center}
-header select{flex:1;font-weight:600;font-size:18px;font-family:inherit;background:transparent;color:#fff;border:0;appearance:none;min-width:0}
-header select option{color:#000}header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;padding:6px 10px;font:inherit;font-size:14px}
-main{padding:12px 12px calc(env(safe-area-inset-bottom) + 90px);max-width:680px;margin:0 auto}
-.cat{margin:14px 4px 6px;font-size:13px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.03em}
-.row{display:flex;align-items:center;gap:12px;background:var(--card);border-bottom:1px solid var(--line);padding:12px 14px;min-height:52px}
-.row:first-of-type{border-radius:12px 12px 0 0}.grp .row:last-child{border-radius:0 0 12px 12px;border-bottom:0}.grp .row:only-child{border-radius:12px}
-.chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--g);flex:none;display:grid;place-items:center;color:#fff;font-size:15px}
-.done .chk{background:var(--g)}.done .nm{text-decoration:line-through;color:var(--m)}
-.nm{flex:1;word-break:break-word}.q{color:var(--m);font-size:15px}.del{border:0;background:none;color:var(--m);font-size:20px;padding:4px 6px}
-.add{position:fixed;inset:auto 0 0 0;background:var(--bg);border-top:1px solid var(--line);padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);display:flex;gap:8px;justify-content:center}
-.add input{flex:1;max-width:560px;font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--t)}
-.add button,.btn{background:var(--g);color:#fff;border:0;border-radius:12px;padding:0 18px;font-weight:600;font-size:16px;font-family:inherit}
-.btn{padding:14px 22px;font-size:17px}.empty,.center{text-align:center;color:var(--m);padding:40px 16px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 80px);background:#222;color:#fff;padding:10px 16px;border-radius:12px;display:flex;gap:14px;font-size:15px}
-.toast button{background:none;border:0;color:#7fe0b0;font-weight:600;font-size:15px;font-family:inherit}.clear{display:block;margin:18px auto;background:none;border:1px solid var(--line);color:var(--m);border-radius:10px;padding:8px 14px;font:inherit;font-size:15px}
+:root{--g:#0F766E;--g2:#14b8a6;--coral:#F97360;--bg:#F3F6F5;--card:#fff;--t:#16201e;--m:#6b7775;--line:#e6ecea}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1413;--card:#172120;--t:#e6eeec;--m:#94a3a0;--line:#25302e}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--t);font:17px/1.35 -apple-system,system-ui,"Segoe UI",Roboto,"Rubik",sans-serif}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,var(--g),var(--g2));color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;border-radius:0 0 24px 24px;box-shadow:0 6px 20px rgba(15,118,110,.25)}
+.top{display:flex;align-items:center;gap:10px}.top h1{flex:1;margin:0;font-size:26px;font-weight:800;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic-btn{background:rgba(255,255,255,.2);border:0;color:#fff;border-radius:12px;padding:7px 11px;font:600 14px/1 inherit;font-family:inherit}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:12px -16px 0;padding:0 16px 2px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;border-radius:999px;padding:7px 14px;font:600 15px inherit;font-family:inherit;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;gap:6px}
+.chip.on{background:#fff;color:var(--g)}.chip .dot{width:10px;height:10px;border-radius:50%}
+.prog{margin-top:12px;height:8px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}.prog i{display:block;height:100%;background:#fff;border-radius:99px;transition:width .3s}
+.ptxt{font-size:13px;opacity:.9;margin-top:5px}
+main{padding:14px 12px calc(env(safe-area-inset-bottom) + 150px);max-width:680px;margin:0 auto}
+.sec{background:var(--card);border-radius:18px;margin:0 0 12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);border-inline-start:6px solid var(--c)}
+.sh{display:flex;align-items:center;gap:10px;padding:11px 14px 6px;font-weight:800;font-size:15px;color:var(--c)}
+.sh .em{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 18%,transparent);font-size:17px}
+.sh .n{margin-inline-start:auto;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c);border-radius:99px;padding:2px 9px;font-size:13px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 14px;min-height:56px;border-top:1px solid var(--line)}
+.ico{width:40px;height:40px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--c) 14%,transparent)}
+.nm{flex:1;font-weight:600;word-break:break-word}
+.step{display:flex;align-items:center;background:var(--bg);border-radius:12px;flex:none}
+.step button{border:0;background:none;color:var(--g);font:700 20px/1 inherit;width:32px;height:34px}.step span{min-width:22px;text-align:center;font-weight:700;font-size:15px}
+.chk{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--c);flex:none;display:grid;place-items:center;color:#fff;font-size:16px;background:transparent}
+.done .chk{background:var(--c)}.done .nm{text-decoration:line-through;color:var(--m);font-weight:500}.done .ico{filter:grayscale(1);opacity:.55}
+.cart{--c:#9AA3A1}.empty{text-align:center;color:var(--m);padding:50px 16px;font-size:18px}.empty b{display:block;font-size:54px;margin-bottom:8px}
+.add{position:fixed;inset:auto 0 0 0;padding:8px 12px calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,var(--bg) 30%)}
+.sug{display:flex;gap:7px;overflow-x:auto;max-width:620px;margin:0 auto 8px;scrollbar-width:none}
+.sug button{flex:none;border:0;background:var(--card);color:var(--t);border-radius:999px;padding:8px 13px;font:600 15px inherit;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.bar{display:flex;gap:8px;max-width:620px;margin:0 auto;background:var(--card);border-radius:18px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.bar input{flex:1;border:0;background:none;font:inherit;color:var(--t);padding:8px 10px;outline:none;min-width:0}
+.bar button{border:0;background:var(--coral);color:#fff;border-radius:13px;width:46px;font:700 26px/1 inherit}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 140px);background:#1f2a28;color:#fff;padding:11px 16px;border-radius:14px;display:flex;gap:14px;font-size:15px;z-index:9}
+.toast button{background:none;border:0;color:#5eead4;font:700 15px inherit;font-family:inherit}
+.clear{display:block;margin:6px auto 0;background:none;border:0;color:var(--m);font:600 15px inherit;font-family:inherit;padding:10px}
+.center{text-align:center;padding:60px 20px;color:var(--m)}.btn{background:var(--g);color:#fff;border:0;border-radius:14px;padding:15px 26px;font:700 17px inherit;font-family:inherit}
+.menu{position:absolute;inset-inline-end:12px;top:calc(env(safe-area-inset-top) + 52px);background:var(--card);color:var(--t);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;z-index:20}
+.menu button{display:block;width:100%;text-align:start;border:0;background:none;color:inherit;font:600 16px inherit;font-family:inherit;padding:13px 18px}
 </style>
 </head>
 <body>
 <div id="app"><div class="center">…</div></div>
-<script type="module" src="app.js?v=2"></script>
+<script type="module" src="app.js?v=3"></script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')</script>
 </body>
 </html>

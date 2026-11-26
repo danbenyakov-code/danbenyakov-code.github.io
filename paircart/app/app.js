@@ -3,7 +3,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, updateDoc, writeBatch,
   collection, query, where, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
-import { CATALOG } from './catalog.js';
+import { CATALOG, ICONS } from './catalog.js';
 
 // Firebase web config (public by design; access is enforced by Firestore rules).
 const firebaseConfig = {
@@ -14,17 +14,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 
-const HE = (localStorage.lang || navigator.language || 'en').startsWith('he') || localStorage.lang === 'iw';
+const HE = localStorage.lang ? localStorage.lang === 'he' : /^(he|iw)/i.test(navigator.language || '');
 document.documentElement.lang = HE ? 'he' : 'en'; document.documentElement.dir = HE ? 'rtl' : 'ltr';
 const T = HE ? {
   signin: 'התחברות עם Google', hint: 'התחברו עם אותו חשבון Google כמו באפליקציה, והרשימות יסתנכרנו.', add: 'הוספה', ph: 'מה צריך? למשל "2 חלב"',
-  empty: 'הרשימה ריקה', newList: '+ רשימה חדשה', listName: 'שם הרשימה', out: 'יציאה', deleted: 'נמחק', undo: 'ביטול', clear: 'ניקוי מסומנים', lang: 'EN', defList: 'קניות',
+  empty: 'הרשימה ריקה', newList: '+ רשימה חדשה', listName: 'שם הרשימה', out: 'יציאה', deleted: 'נמחק', undo: 'ביטול', clear: 'ניקוי מסומנים', lang: 'English', menu: 'עוד', inCart: 'בעגלה', of: 'מתוך', emptyHint: 'הוסיפו פריט ראשון למטה', defList: 'קניות',
   cats: { produce: 'ירקות ופירות', dairy: 'חלב וביצים', meat_fish: 'בשר ודגים', bakery: 'מאפים', pantry: 'מזווה', drinks: 'משקאות', frozen: 'קפואים', cleaning: 'ניקיון', pharm: 'פארם', home: 'לבית', other: 'אחר' },
 } : {
   signin: 'Sign in with Google', hint: 'Use the same Google account as in the app and your lists sync.', add: 'Add', ph: 'What do you need? e.g. "2 milk"',
-  empty: 'The list is empty', newList: '+ New list', listName: 'List name', out: 'Sign out', deleted: 'Deleted', undo: 'Undo', clear: 'Clear checked', lang: 'עב', defList: 'Groceries',
+  empty: 'The list is empty', newList: '+ New list', listName: 'List name', out: 'Sign out', deleted: 'Deleted', undo: 'Undo', clear: 'Clear checked', lang: 'עברית', menu: 'More', inCart: 'In the cart', of: 'of', emptyHint: 'Add your first item below', defList: 'Groceries',
   cats: { produce: 'Fruit & vegetables', dairy: 'Dairy & eggs', meat_fish: 'Meat & fish', bakery: 'Bakery', pantry: 'Pantry', drinks: 'Drinks', frozen: 'Frozen', cleaning: 'Cleaning', pharm: 'Pharmacy', home: 'Home', other: 'Other' },
 };
+const PALETTE = ['#00C875','#FDAB3D','#E2445C','#FFCB00','#579BFC','#A25DDC','#66CCFF','#FF5AC4','#0086C0','#9CD326','#7F5347','#9AA3A1'];
+const LISTC = ['#0F766E','#F97360','#6366F1','#EAB308','#EC4899','#0EA5E9'];
+const BUILTIN_COLORS = {produce:0,dairy:4,meat_fish:2,bakery:1,pantry:3,drinks:8,frozen:6,cleaning:5,pharm:7,home:10,other:11};
+const iconFor = n => (ICONS.find(([k]) => n.includes(norm(k))) || [])[1];
 const BUILTIN = [['produce','🥕'],['dairy','🥛'],['meat_fish','🥩'],['bakery','🥖'],['pantry','🥫'],['drinks','🥤'],['frozen','🧊'],['cleaning','🧽'],['pharm','💊'],['home','🏠'],['other','🛒']];
 
 const $app = document.getElementById('app');
@@ -77,6 +81,7 @@ async function createList(name) {
 }
 function guessCategory(n) {
   const prev = S.items.find(i => i.normalizedName === n); if (prev) return prev.categoryKey;
+  const ic = ICONS.find(([k]) => n.includes(norm(k))); if (ic) return ic[2];
   const hit = CATALOG.find(([he, en]) => norm(he) === n || norm(en) === n) || CATALOG.find(([he, en]) => n.includes(norm(he)) || n.includes(norm(en)));
   return hit ? hit[2] : 'other';
 }
@@ -112,36 +117,55 @@ function renderSignIn() {
 }
 function catInfo(key) {
   const c = S.cats[key], b = BUILTIN.find(x => x[0] === key);
-  return { name: c?.name || T.cats[key] || key, emoji: c?.emoji || b?.[1] || '🛒', pos: c?.position ?? (b ? BUILTIN.indexOf(b) : 99) };
+  return { name: c?.name || T.cats[key] || key, emoji: c?.emoji || b?.[1] || '🛒', pos: c?.position ?? (b ? BUILTIN.indexOf(b) : 99), color: PALETTE[c?.colorIndex ?? BUILTIN_COLORS[key] ?? 11] || PALETTE[11] };
 }
+function suggestions(q) {
+  const n = norm(q); if (n.length < 1) return [];
+  const have = new Set(S.items.filter(i => !i.checked).map(i => i.normalizedName));
+  const out = [];
+  for (const [he, en] of CATALOG) { const w = HE ? he : en; const wn = norm(w); if (wn.startsWith(n) && !have.has(wn) && !out.includes(w)) out.push(w); if (out.length >= 6) break; }
+  return out;
+}
+let menuOpen = false;
 function render() {
   if (!S.hid || !S.sel) return;
   const focused = document.activeElement?.id === 'in', draft = document.getElementById('in')?.value || '';
   const open = S.items.filter(i => !i.checked), done = S.items.filter(i => i.checked);
+  const total = S.items.length, pct = total ? Math.round(done.length * 100 / total) : 0;
   const groups = {}; open.forEach(i => (groups[i.categoryKey || 'other'] ??= []).push(i));
-  const row = i => `<div class="row ${i.checked ? 'done' : ''}" data-id="${i.id}"><span class="chk">${i.checked ? '✓' : ''}</span>
-    <span class="nm">${esc(i.name)}</span>${i.quantity && i.quantity !== 1 ? `<span class="q">${+i.quantity}${i.unit ? ' ' + esc(i.unit) : ''}</span>` : ''}
-    <button class="del" data-del="${i.id}" aria-label="delete">×</button></div>`;
   const byName = (a, b) => a.name.localeCompare(b.name);
-  const body = Object.keys(groups).map(k => [k, catInfo(k)]).sort((a, b) => a[1].pos - b[1].pos)
-    .map(([k, c]) => `<div class="cat">${c.emoji} ${esc(c.name)}</div><div class="grp">${groups[k].sort(byName).map(row).join('')}</div>`).join('')
-    + (done.length ? `<div class="cat">✓ ${done.length}</div><div class="grp">${done.sort(byName).map(row).join('')}</div><button class="clear" id="clr">${T.clear}</button>` : '');
-  $app.innerHTML = `<header><select id="ls">${S.lists.map(l => `<option value="${l.id}" ${l.id === S.sel ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
-      <option value="__new">${T.newList}</option></select><button id="lg">${T.lang}</button><button id="so">${T.out}</button></header>
-    <main>${S.items.length ? body : `<div class="empty">${T.empty}</div>`}</main>
-    <form class="add" id="f"><input id="in" placeholder="${T.ph}" autocomplete="off" enterkeyhint="done"><button>${T.add}</button></form>`;
-  const inp = document.getElementById('in'); inp.value = draft; if (focused) inp.focus();
-  document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = inp.value; inp.value = ''; addItem(v); inp.focus(); };
-  document.getElementById('ls').onchange = e => {
-    if (e.target.value !== '__new') return selectList(e.target.value);
-    const n = prompt(T.listName); n?.trim() ? createList(n.trim()) : (e.target.value = S.sel);
-  };
-  document.getElementById('so').onclick = () => signOut(auth);
-  document.getElementById('lg').onclick = () => { localStorage.lang = HE ? 'en' : 'he'; location.reload(); };
+  const row = (i, c) => `<div class="row ${i.checked ? 'done' : ''}" data-id="${i.id}">
+    <span class="ico">${iconFor(i.normalizedName || norm(i.name)) || c.emoji}</span><span class="nm">${esc(i.name)}</span>
+    ${i.checked ? '' : `<span class="step"><button data-dec="${i.id}" aria-label="-">−</button><span>${+(i.quantity || 1)}</span><button data-inc="${i.id}" aria-label="+">+</button></span>`}
+    <span class="chk">${i.checked ? '✓' : ''}</span></div>`;
+  const secs = Object.keys(groups).map(k => [k, catInfo(k)]).sort((a, b) => a[1].pos - b[1].pos).map(([k, c]) =>
+    `<section class="sec" style="--c:${c.color}"><div class="sh"><span class="em">${c.emoji}</span>${esc(c.name)}<span class="n">${groups[k].length}</span></div>${groups[k].sort(byName).map(i => row(i, c)).join('')}</section>`).join('');
+  const cart = done.length ? `<section class="sec cart"><div class="sh"><span class="em">🛒</span>${T.inCart}<span class="n">${done.length}</span></div>${done.sort(byName).map(i => row(i, catInfo(i.categoryKey || 'other'))).join('')}</section><button class="clear" id="clr">${T.clear}</button>` : '';
+  const chips = S.lists.map(l => `<button class="chip ${l.id === S.sel ? 'on' : ''}" data-list="${l.id}"><span class="dot" style="background:${LISTC[(l.colorIndex || 0) % LISTC.length]}"></span>${esc(l.name)}</button>`).join('') + `<button class="chip" data-list="__new">${T.newList}</button>`;
+  const cur = S.lists.find(l => l.id === S.sel);
+  $app.innerHTML = `<header><div class="top"><h1>${esc(cur?.name || '')}</h1><button class="ic-btn" id="mn">⋯</button></div>
+    <div class="chips">${chips}</div>${total ? `<div class="prog"><i style="width:${pct}%"></i></div><div class="ptxt">${done.length} ${T.of} ${total}</div>` : ''}
+    ${menuOpen ? `<div class="menu"><button id="lg">🌐 ${T.lang}</button><button id="so">↩ ${T.out}</button></div>` : ''}</header>
+    <main>${total ? secs + cart : `<div class="empty"><b>🧺</b>${T.empty}<br><small>${T.emptyHint}</small></div>`}</main>
+    <form class="add" id="f"><div class="sug" id="sg"></div><div class="bar"><input id="in" placeholder="${T.ph}" autocomplete="off" enterkeyhint="done"><button aria-label="${T.add}">+</button></div></form>`;
+  const inp = document.getElementById('in'), sg = document.getElementById('sg');
+  const showSug = () => { sg.innerHTML = suggestions(inp.value).map(w => `<button type="button" data-sug="${esc(w)}">${iconFor(norm(w)) || ''} ${esc(w)}</button>`).join(''); };
+  inp.value = draft; if (focused) inp.focus(); showSug();
+  inp.oninput = showSug;
+  sg.onclick = e => { const w = e.target.closest('[data-sug]')?.dataset.sug; if (w) { addItem(w); inp.value = ''; showSug(); inp.focus(); } };
+  document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = inp.value; inp.value = ''; showSug(); addItem(v); inp.focus(); };
+  $app.querySelectorAll('[data-list]').forEach(b => b.onclick = () => {
+    if (b.dataset.list !== '__new') return selectList(b.dataset.list);
+    const n = prompt(T.listName); if (n?.trim()) createList(n.trim());
+  });
+  document.getElementById('mn').onclick = () => { menuOpen = !menuOpen; render(); };
+  document.getElementById('so')?.addEventListener('click', () => { menuOpen = false; signOut(auth); });
+  document.getElementById('lg')?.addEventListener('click', () => { localStorage.lang = HE ? 'en' : 'he'; location.reload(); });
   document.getElementById('clr')?.addEventListener('click', clearChecked);
   $app.querySelectorAll('.row').forEach(r => r.onclick = e => {
-    const id = r.dataset.id;
-    if (e.target.dataset.del) return removeItem(id);
-    const it = S.items.find(i => i.id === id); patch(id, { checked: !it.checked });
+    const id = r.dataset.id, it = S.items.find(i => i.id === id);
+    if (e.target.dataset.inc) return patch(id, { quantity: (it.quantity || 1) + 1 });
+    if (e.target.dataset.dec) return (it.quantity || 1) <= 1 ? removeItem(id) : patch(id, { quantity: it.quantity - 1 });
+    patch(id, { checked: !it.checked });
   });
 }
