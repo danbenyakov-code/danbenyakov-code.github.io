@@ -48,11 +48,14 @@ main{padding:14px 12px calc(env(safe-area-inset-bottom) + 150px);max-width:680px
 .center{text-align:center;padding:60px 20px;color:var(--m)}.btn{background:var(--g);color:#fff;border:0;border-radius:14px;padding:15px 26px;font:700 17px inherit;font-family:inherit}
 .menu{position:absolute;inset-inline-end:12px;top:calc(env(safe-area-inset-top) + 52px);background:var(--card);color:var(--t);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;z-index:20}
 .menu button{display:block;width:100%;text-align:start;border:0;background:none;color:inherit;font:600 16px inherit;font-family:inherit;padding:13px 18px}
+.nm small{color:var(--m);font-weight:500}.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:flex;align-items:flex-end}
+.panel{background:var(--card);width:100%;border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-width:680px;margin:0 auto}
+.uchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.uchips button{border:0;border-radius:999px;padding:10px 16px;font:600 16px inherit;font-family:inherit;background:var(--bg);color:var(--t)}.uchips button.on{background:var(--g);color:#fff}
 </style>
 </head>
 <body>
 <div id="app"><div class="center">…</div></div>
-<script type="module" src="app.js?v=4"></script>
+<script type="module" src="app.js?v=5"></script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')</script>
 </body>
 </html>

@@ -34,10 +34,19 @@ const BUILTIN = [['produce','🥕'],['dairy','🥛'],['meat_fish','🥩'],['bake
 const $app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const norm = s => s.replace(/[֑-ׇ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+const UNIT_ALIASES = { kg: ['kg','kgs','kilo','kilos','ק"ג','ק״ג','קג','קילו','קילוגרם'], g: ['g','gr','gram','grams','גרם',"ג'",'ג׳',"גר'"],
+  L: ['l','lt','liter','liters','litre','litres','ליטר','ליטרים',"ל'",'ל׳'], pack: ['pack','packs','pkg','מארז','מארזים','חבילה','חבילות'], pcs: ['pcs','pc',"יח'",'יח׳','יחידה','יחידות'] };
+const unitCode = t => { if (!t) return null; t = t.trim().toLowerCase(); for (const [c, a] of Object.entries(UNIT_ALIASES)) if (a.includes(t)) return c; return null; };
+const UNIT_CODES = ['pcs', 'kg', 'g', 'L', 'pack'];
+const unitLabel = c => { const u = unitCode(c); if (!u) return c || ''; return HE ? { pcs: 'יח׳', kg: 'ק״ג', g: 'גרם', L: 'ליטר', pack: 'מארז' }[u] : u; };
+const unitStep = c => ({ kg: .5, L: .5, g: 100 })[unitCode(c)] || 1;
+const fmtQ = q => String(Math.round(q * 100) / 100);
 function parse(raw) { // same rules as Android QuickAddParser
   const t = raw.trim().replace(/\s+/g, ' '); if (!t) return null;
-  const q = s => { const n = parseFloat(s.replace(',', '.')); return n > 0 && n <= 999 ? n : null; };
-  let m = t.match(/^(\d+(?:[.,]\d+)?)\s*[xX×]?\s+(.+)$/); if (m && q(m[1])) return { name: m[2].trim(), qty: q(m[1]) };
+  const q = s => { const n = parseFloat(s.replace(',', '.')); return n > 0 && n <= 9999 ? n : null; };
+  let m = t.match(/^(\d+(?:[.,]\d+)?)\s*(\S+)\s+(.+)$/); if (m && q(m[1]) && unitCode(m[2])) return { name: m[3].trim(), qty: q(m[1]), unit: unitCode(m[2]) };
+  m = t.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)\s*(\S+)$/); if (m && q(m[2]) && unitCode(m[3])) return { name: m[1].trim(), qty: q(m[2]), unit: unitCode(m[3]) };
+  m = t.match(/^(\d+(?:[.,]\d+)?)\s*[xX×]?\s+(.+)$/); if (m && q(m[1])) return { name: m[2].trim(), qty: q(m[1]) };
   m = t.match(/^(.+?)\s+[xX×]?\s*(\d+(?:[.,]\d+)?)$/); if (m && q(m[2])) return { name: m[1].trim(), qty: q(m[2]) };
   return { name: t, qty: 1 };
 }
@@ -90,9 +99,9 @@ async function addItem(raw) {
   const p = parse(raw); if (!p) return;
   const n = norm(p.name), now = Date.now(), uid = auth.currentUser.uid;
   const dup = S.items.find(i => i.normalizedName === n && !i.checked);
-  if (dup) return updateDoc(itemRef(dup.id), { quantity: (dup.quantity || 1) + p.qty, updatedAt: now, updatedBy: uid });
+  if (dup) return updateDoc(itemRef(dup.id), (!p.unit || unitCode(dup.unit) === p.unit) ? { quantity: (dup.quantity || 1) + p.qty, updatedAt: now, updatedBy: uid } : { quantity: p.qty, unit: p.unit, updatedAt: now, updatedBy: uid });
   const id = crypto.randomUUID();
-  await setDoc(itemRef(id), { listId: S.sel, name: p.name, normalizedName: n, quantity: p.qty, unit: null, note: null,
+  await setDoc(itemRef(id), { listId: S.sel, name: p.name, normalizedName: n, quantity: p.qty, unit: p.unit || null, note: null,
     categoryKey: guessCategory(n), checked: false, deleted: false, createdAt: now, updatedAt: now, updatedBy: uid });
 }
 const patch = (id, data) => updateDoc(itemRef(id), { ...data, updatedAt: Date.now(), updatedBy: auth.currentUser.uid });
@@ -119,6 +128,18 @@ function catInfo(key) {
   const c = S.cats[key], b = BUILTIN.find(x => x[0] === key);
   return { name: c?.name || T.cats[key] || key, emoji: c?.emoji || b?.[1] || '🛒', pos: c?.position ?? (b ? BUILTIN.indexOf(b) : 99), color: PALETTE[c?.colorIndex ?? BUILTIN_COLORS[key] ?? 11] || PALETTE[11] };
 }
+function openUnits(it) {
+  document.querySelector('.sheet')?.remove();
+  const d = document.createElement('div'); d.className = 'sheet';
+  const cur = unitCode(it.unit);
+  d.innerHTML = `<div class="panel"><b>${esc(it.name)}</b><div class="uchips">${UNIT_CODES.map(c => `<button data-u="${c}" class="${cur === c ? 'on' : ''}">${unitLabel(c)}</button>`).join('')}<button data-u="" class="${cur ? '' : 'on'}">${HE ? 'ללא' : 'None'}</button></div></div>`;
+  d.onclick = e => {
+    const b = e.target.closest('[data-u]');
+    if (b) { const u = b.dataset.u || null; const q = it.quantity || 1; patch(it.id, { unit: u, quantity: u === 'g' && q < 50 ? 100 : q }); }
+    if (b || e.target === d) d.remove();
+  };
+  document.body.append(d);
+}
 function suggestions(q) {
   const n = norm(q); if (n.length < 1) return [];
   const have = new Set(S.items.filter(i => !i.checked).map(i => i.normalizedName));
@@ -135,8 +156,8 @@ function render() {
   const groups = {}; open.forEach(i => (groups[i.categoryKey || 'other'] ??= []).push(i));
   const byName = (a, b) => a.name.localeCompare(b.name);
   const row = (i, c) => `<div class="row ${i.checked ? 'done' : ''}" data-id="${i.id}">
-    <span class="ico">${iconFor(i.normalizedName || norm(i.name)) || c.emoji}</span><span class="nm">${esc(i.name)}</span>
-    ${i.checked ? '' : `<span class="step"><button data-dec="${i.id}" aria-label="-">−</button><span>${+(i.quantity || 1)}</span><button data-inc="${i.id}" aria-label="+">+</button></span>`}
+    <span class="ico">${iconFor(i.normalizedName || norm(i.name)) || c.emoji}</span><span class="nm" data-edit="${i.id}">${esc(i.name)}${!i.checked ? '' : (i.unit || i.quantity !== 1 ? ` <small>${fmtQ(i.quantity || 1)} ${esc(unitLabel(i.unit))}</small>` : '')}</span>
+    ${i.checked ? '' : `<span class="step"><button data-dec="${i.id}" aria-label="-">−</button><span>${fmtQ(i.quantity || 1)}${i.unit ? ' ' + esc(unitLabel(i.unit)) : ''}</span><button data-inc="${i.id}" aria-label="+">+</button></span>`}
     <span class="chk">${i.checked ? '✓' : ''}</span></div>`;
   const secs = Object.keys(groups).map(k => [k, catInfo(k)]).sort((a, b) => a[1].pos - b[1].pos).map(([k, c]) =>
     `<section class="sec" style="--c:${c.color}"><div class="sh"><span class="em">${c.emoji}</span>${esc(c.name)}<span class="n">${groups[k].length}</span></div>${groups[k].sort(byName).map(i => row(i, c)).join('')}</section>`).join('');
@@ -164,8 +185,10 @@ function render() {
   document.getElementById('clr')?.addEventListener('click', clearChecked);
   $app.querySelectorAll('.row').forEach(r => r.onclick = e => {
     const id = r.dataset.id, it = S.items.find(i => i.id === id);
-    if (e.target.dataset.inc) return patch(id, { quantity: (it.quantity || 1) + 1 });
-    if (e.target.dataset.dec) return (it.quantity || 1) <= 1 ? removeItem(id) : patch(id, { quantity: it.quantity - 1 });
+    const st = unitStep(it.unit), q0 = it.quantity || 1;
+    if (e.target.dataset.inc) return patch(id, { quantity: Math.floor(q0 / st + 1e-9) * st + st });
+    if (e.target.dataset.dec) return q0 <= st ? removeItem(id) : patch(id, { quantity: Math.max(st, (q0 % st ? Math.floor(q0 / st) * st : q0 - st)) });
+    if (e.target.closest('[data-edit]') && !it.checked) return openUnits(it);
     patch(id, { checked: !it.checked });
   });
 }
