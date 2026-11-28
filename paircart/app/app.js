@@ -58,8 +58,8 @@ const T = HE ? {
   delList: 'Delete list', delListQ: 'Delete this list?', none: 'None', defList: 'Groceries', more: n => `${n} more`, less: 'Less',
   cats: { produce: 'Fruit & vegetables', dairy: 'Dairy & eggs', meat_fish: 'Meat & fish', bakery: 'Bakery', pantry: 'Pantry', drinks: 'Drinks', frozen: 'Frozen', cleaning: 'Cleaning', pharm: 'Pharmacy', home: 'Home', other: 'Other' },
 };
-const PALETTE = ['#3B37E6', '#FF9F43', '#FF7369', '#E8A800', '#55BBF9', '#A142FF', '#14B8A6', '#FF5AC4', '#0EA5E9', '#6BBF3B', '#9C6B4E', '#98A3BE'];
-const BUILTIN = [['produce', '🥕', 9], ['dairy', '🥛', 4], ['meat_fish', '🥩', 2], ['bakery', '🥖', 1], ['pantry', '🥫', 3], ['drinks', '🥤', 8], ['frozen', '🧊', 6], ['cleaning', '🧽', 5], ['pharm', '💊', 7], ['home', '🏠', 10], ['other', '🛒', 11]];
+const PALETTE = ['#22C55E', '#FF9F43', '#FF5A5F', '#E8A800', '#55BBF9', '#A142FF', '#14B8A6', '#FF5AC4', '#3B37E6', '#6BBF3B', '#9C6B4E', '#98A3BE']; // same order as Android CategoryPalette
+const BUILTIN = [['produce', '🥕', 0], ['dairy', '🥛', 4], ['meat_fish', '🥩', 2], ['bakery', '🥖', 1], ['pantry', '🥫', 3], ['drinks', '🥤', 8], ['frozen', '🧊', 6], ['cleaning', '🧽', 5], ['pharm', '💊', 7], ['home', '🏠', 10], ['other', '🛒', 11]];
 
 // ---------- icons (stroke SVG) ----------
 const P = {
@@ -355,7 +355,7 @@ async function ocrTotal(dataUrl) {
   const { data } = await window.Tesseract.recognize(dataUrl, 'heb+eng');
   const lines = data.text.split('\n'), num = l => (l.match(/\d{1,5}(?:[.,]\d{2})/g) || []).map(v => parseFloat(v.replace(',', '.')));
   const key = /(סה"?כ|סה״כ|סך הכל|לתשלום|total|amount due|balance)/i;
-  let best = null; lines.forEach((l, i) => { if (key.test(l)) { const v = [...num(l), ...num(lines[i + 1] || '')]; if (v.length) best = Math.max(best || 0, ...v); } });
+  let best = null; lines.forEach((l, i) => { if (key.test(l)) { const v = num(l).length ? num(l) : num(lines[i + 1] || ''); if (v.length) best = Math.max(best || 0, ...v); } });
   if (!best) { const all = lines.slice(Math.floor(lines.length / 2)).flatMap(num); if (all.length) best = Math.max(...all); }
   return best && best < 100000 ? best : null;
 }
